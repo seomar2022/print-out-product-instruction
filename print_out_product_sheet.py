@@ -20,36 +20,40 @@ order_list = pd.read_csv('data.csv')
 # 상품코드 열의 데이터를 문자열로 변환하고 NaN 값을 빈 문자열로 대체
 codes = order_list['상품코드'].astype(str).fillna("").tolist()
 
-#카페24상품코드와 네이버 상품코드를 매핑한 엑셀파일 불러오기
+#카페24상품코드와 네이버 상품코드를 매핑한 엑셀파일 읽어오기
 product_code_mapping = pd.read_excel("product_code_mapping.xlsx", engine='openpyxl')
 
 
-def convert_to_cafe24(naver_code, column="naver_code"):
-    # 검색어가 포함된 행 필터링
-    result = product_code_mapping[product_code_mapping[column] == naver_code]
-    result_col = "cafe24_code"
-    return result[result_col]
+def convert_to_cafe24(code, column):
+    # 'column' 열에 'code'가 있는 행 ex) naver_code열에서 9708250509가 있는 행
+    result = product_code_mapping.query(f"{column} == {code}")
+    print(result.iloc[0, 2])
+    #print(product_code_mapping[[result],["cafe24_code"]])
+    return 0
+
+
+#상품코드를 카페24의 코드로 통일
+converted_codes = []
+for code in codes:
+    if code.startswith("P00") : #카페24
+        converted_codes.append(code)
+    elif code.startswith("9") or code.startswith("1") : #네이버
+        #상품코드 맵핑된 엑셀파일에서 네이버 상품코드에 해당하는 카페24상품코드 가져오기
+        result = convert_to_cafe24(code, "naver_code")
+        #converted_codes.append(result)
+    elif code.startswith("3") : #카카오
+        print("카카오")
+
 
 # PDF 파일 병합
 merge_pdf = PdfWriter()
 file_not_found = []
 
-
-for code in codes:
-    if code.startswith("P00") : #카페24
-        try:
-            merge_pdf.append(f"sheets\\{code}.pdf")
-        except FileNotFoundError:
-            file_not_found.append(code)
-    elif code.startswith("9") or code.startswith("1") : #네이버
-        print(code)
-        #상품코드 맵핑된 엑셀파일에서 네이버 상품코드에 해당하는 카페24상품코드 가져오기
-        result = convert_to_cafe24(code)
-        #merge_pdf.append(result)
-        print(result)
-    elif code.startswith("3") : #카카오
-        print("카카오")
-
+for converted_code in converted_codes:
+    try:
+        merge_pdf.append(f"sheets\\{converted_code}.pdf")
+    except FileNotFoundError:
+        file_not_found.append(converted_code)
 
 # 현재 날짜 가져오기
 now = datetime.now().strftime("%m.%d.%a") #월.일.요일
@@ -62,5 +66,3 @@ pyautogui.alert(file_not_found)
 #pywin32로 프린트
 
 #네이버의 상품코드(상품번호) 입력 시, 카페24 상품코드 출력. 
-
-
