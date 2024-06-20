@@ -15,18 +15,20 @@ import pandas as pd #pip install pandas openpyxl #엑셀의 데이터를 읽어�
 import pyautogui #pip install pyautogui
 
 # 전채널 주문리스트 파일을 읽어오기
-order_list = pd.read_csv('data.csv', usecols=['상품코드'])
-#상품코드 열의 데이터들을 list에 넣기
-codes = order_list['상품코드'].tolist()
+order_list = pd.read_csv('data.csv')
 
-#카페24의 상품코드만 가져오기위해서 P00로 시작하는 문자열 코드만 남겨둔다.
-#걸러지는 데이터) 스마트스토어 상품 코드(9, 10으로 시작하는 숫자), 톡스토어 상품코드(3으로 시작하는 숫자), 비어있는 셀(nan)
-#isinstance(item, str) ->item이 str이면 true를 반환
-#cafe24_codes = [item for item in codes if isinstance(item, str) and item.startswith("P000")]
+# 상품코드 열의 데이터를 문자열로 변환하고 NaN 값을 빈 문자열로 대체
+codes = order_list['상품코드'].astype(str).fillna("").tolist()
+
+#카페24상품코드와 네이버 상품코드를 매핑한 엑셀파일 불러오기
+product_code_mapping = pd.read_excel("product_code_mapping.xlsx", engine='openpyxl')
 
 
-#
-product_code_mapping = pd.read_csv("product_code_mapping.xslx", engine='openpyxl')
+def convert_to_cafe24(naver_code, column="naver_code"):
+    # 검색어가 포함된 행 필터링
+    result = product_code_mapping[product_code_mapping[column] == naver_code]
+    result_col = "cafe24_code"
+    return result[result_col]
 
 # PDF 파일 병합
 merge_pdf = PdfWriter()
@@ -40,9 +42,11 @@ for code in codes:
         except FileNotFoundError:
             file_not_found.append(code)
     elif code.startswith("9") or code.startswith("1") : #네이버
+        print(code)
         #상품코드 맵핑된 엑셀파일에서 네이버 상품코드에 해당하는 카페24상품코드 가져오기
-
-        print("네이버")
+        result = convert_to_cafe24(code)
+        #merge_pdf.append(result)
+        print(result)
     elif code.startswith("3") : #카카오
         print("카카오")
 
@@ -58,3 +62,5 @@ pyautogui.alert(file_not_found)
 #pywin32로 프린트
 
 #네이버의 상품코드(상품번호) 입력 시, 카페24 상품코드 출력. 
+
+
