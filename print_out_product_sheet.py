@@ -13,7 +13,9 @@ from pypdf import PdfWriter #pip install pypdf #pdf병합기능 쓰기 위해.
 from datetime import datetime #병합된 pdf이름에 오늘 날짜 쓰기 위해.
 import pandas as pd #pip install pandas openpyxl #엑셀의 데이터를 읽어오기 위해.
 import pyautogui #pip install pyautogui
+import numpy
 
+####엑셀 파일 읽어오기
 # 전채널 주문리스트 파일을 읽어오기
 order_list = pd.read_csv('data.csv')
 
@@ -24,28 +26,32 @@ codes = order_list['상품코드'].astype(str).fillna("").tolist()
 product_code_mapping = pd.read_excel("product_code_mapping.xlsx", engine='openpyxl')
 
 
+####상품코드를 카페24의 코드로 통일
 def convert_to_cafe24(code, column):
     # 'column' 열에 'code'가 있는 행 ex) naver_code열에서 9708250509가 있는 행
     result = product_code_mapping.query(f"{column} == {code}")
-    print(result.iloc[0, 2])
-    #print(product_code_mapping[[result],["cafe24_code"]])
-    return 0
 
+    #print(result.loc[0,])
+    #print(result.loc[, 'cafe24_code'])
+   # print(result.loc[209, ['cafe24_code']])
+    #print(product_code_mapping.loc[0, ['cafe24_code']].astype(str)) #<class 'pandas.core.series.Series'>
+    #return 0
+    return result.iloc[0, 2]#카페24코드가 2열에 있음
 
-#상품코드를 카페24의 코드로 통일
 converted_codes = []
+
 for code in codes:
     if code.startswith("P00") : #카페24
         converted_codes.append(code)
     elif code.startswith("9") or code.startswith("1") : #네이버
         #상품코드 맵핑된 엑셀파일에서 네이버 상품코드에 해당하는 카페24상품코드 가져오기
         result = convert_to_cafe24(code, "naver_code")
-        #converted_codes.append(result)
+        converted_codes.append(result)
     elif code.startswith("3") : #카카오
         print("카카오")
 
 
-# PDF 파일 병합
+#### PDF 파일 병합
 merge_pdf = PdfWriter()
 file_not_found = []
 
@@ -61,8 +67,7 @@ now = datetime.now().strftime("%m.%d.%a") #월.일.요일
 merge_pdf.write(f"{now}_product_sheet.pdf")
 merge_pdf.close()
 
+####설명지 없는 파일 알려주기
 pyautogui.alert(file_not_found)
 
-#pywin32로 프린트
-
-#네이버의 상품코드(상품번호) 입력 시, 카페24 상품코드 출력. 
+####pywin32로 프린트
