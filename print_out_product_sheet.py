@@ -13,7 +13,6 @@ from pypdf import PdfWriter #pip install pypdf #pdf병합기능 쓰기 위해.
 from datetime import datetime #병합된 pdf이름에 오늘 날짜 쓰기 위해.
 import pandas as pd #pip install pandas openpyxl #엑셀의 데이터를 읽어오기 위해.
 import pyautogui #pip install pyautogui
-import numpy
 
 ####엑셀 파일 읽어오기
 # 전채널 주문리스트 파일을 읽어오기
@@ -25,18 +24,17 @@ codes = order_list['상품코드'].astype(str).fillna("").tolist()
 #카페24상품코드와 네이버 상품코드를 매핑한 엑셀파일 읽어오기
 product_code_mapping = pd.read_excel("product_code_mapping.xlsx", engine='openpyxl')
 
+product_code_mapping['naver_code'] = product_code_mapping['naver_code'].astype(str).str.strip().str.replace('-', '')
+product_code_mapping['kakao_code'] = product_code_mapping['kakao_code'].astype(str).str.strip().str.replace('-', '')
+product_code_mapping['cafe24_code'] = product_code_mapping['cafe24_code'].astype(str).str.strip()
+
 
 ####상품코드를 카페24의 코드로 통일
 def convert_to_cafe24(code, column):
     # 'column' 열에 'code'가 있는 행 ex) naver_code열에서 9708250509가 있는 행
-    result = product_code_mapping.query(f"{column} == {code}")
-
-    #print(result.loc[0,])
-    #print(result.loc[, 'cafe24_code'])
-   # print(result.loc[209, ['cafe24_code']])
-    #print(product_code_mapping.loc[0, ['cafe24_code']].astype(str)) #<class 'pandas.core.series.Series'>
-    #return 0
-    return result.iloc[0, 2]#카페24코드가 2열에 있음
+    #result = product_code_mapping.query(f"{column} == {code}")
+    result = product_code_mapping.query(f"{column} == @code")
+    return result['cafe24_code'].iat[0]
 
 converted_codes = []
 
@@ -48,8 +46,9 @@ for code in codes:
         result = convert_to_cafe24(code, "naver_code")
         converted_codes.append(result)
     elif code.startswith("3") : #카카오
-        print("카카오")
-
+        result = convert_to_cafe24(code, "kakao_code")
+        converted_codes.append(result)
+        print("kakao")
 
 #### PDF 파일 병합
 merge_pdf = PdfWriter()
@@ -60,6 +59,9 @@ for converted_code in converted_codes:
         merge_pdf.append(f"sheets\\{converted_code}.pdf")
     except FileNotFoundError:
         file_not_found.append(converted_code)
+
+####설명지없이 출고되는 상품인지 확인
+#일단 보류
 
 # 현재 날짜 가져오기
 now = datetime.now().strftime("%m.%d.%a") #월.일.요일
