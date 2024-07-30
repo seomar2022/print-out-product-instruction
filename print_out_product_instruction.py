@@ -1,30 +1,11 @@
-import os
-import sys
 from pypdf import PdfWriter #pip install pypdf #pdf병합기능 쓰기 위해.
 from datetime import datetime #병합된 pdf이름에 오늘 날짜 쓰기 위해.
 import pandas as pd #pip install pandas openpyxl #엑셀의 데이터를 읽어오기 위해.
 import pyautogui #pip install pyautogui
 
-#response = pyautogui.confirm(text="설명지 병합 프로그램입니다! 바로 실행할까요 사용법을 설명해드릴까요?", title='시작!', buttons=['바로 실행', '사용법 설명'])
-#if response == "사용법 설명":
-#    pyautogui.alert("product_instruction, result, order_list에 cafe24에서 다운받은 주문내역엑셀파일을 넣어주세요. 이 폴더에는 반드시 하나의 파일만 있어야합니다.\n")
-
-pyautogui.alert(text="라라펫몰 설명지 병합 프로그램 v1.0.0입니다! ok버튼을 눌러 실행해주세요\n문의:seomar2022@gmail.com", title='시작!', button="ok")
-
 ####엑셀 파일 읽어오기
-# 전채널주문리스트가 담긴 폴더 읽어오기
-order_list_folder_name = "order_list"
-if os.path.isdir(order_list_folder_name):#폴더 있는지 확인
-    order_list_folder = os.listdir(order_list_folder_name)
-else:
-    os.makedirs(order_list_folder_name)
-
-# 전채널주문리스트 파일을 읽어오기
-if len(order_list_folder) != 0:
-    order_list = pd.read_csv(f"{order_list_folder_name}\\{order_list_folder[0]}")
-else:
-    pyautogui.alert(f"{order_list_folder_name} 폴더에 파일이 없습니다!", button="프로그램 종료")
-    sys.exit() #프로그램 종료
+# 전채널 주문리스트 파일을 읽어오기
+order_list = pd.read_csv('data.csv')
 
 # 상품코드 열의 데이터를 문자열로 변환하고 NaN 값을 빈 문자열로 대체
 codes = order_list['상품코드'].astype(str).fillna("").tolist()
@@ -63,18 +44,17 @@ not_found_files = {}
 
 for converted_code in converted_codes:
     try:
-        merge_pdf.append(f"product_instruction\\{converted_code}.pdf")
+        merge_pdf.append(f"sheets\\{converted_code}.pdf")
     except FileNotFoundError:
         not_found_files[converted_code] = ''
 
 ####설명지없이 출고되는 상품인지 확인
 #일단 보류
 
-result_folder = "result"
 # 현재 날짜 가져오기
 now = datetime.now().strftime("%m.%d.%a") #월.일.요일
 
-merge_pdf.write(f"{result_folder}\\{now}_product_instruction.pdf")
+merge_pdf.write(f"{now}_product_sheet.pdf")
 merge_pdf.close()
 
 ####설명지 없는 상품코드와 상품명 알려주기
@@ -86,16 +66,13 @@ for key in not_found_files:
     not_found_files[key] = key_in_order_list[product_name_col[0]].iat[0]
     
 
+#csv파일로 저장
+converted_codes_df = pd.DataFrame(list(not_found_files.items()), columns=['상품코드', '상품명'])
+converted_codes_df.to_csv(f"{now}_not_found_files.csv", index=False, encoding='utf-8-sig')
+
 ####pyautogui로 프로그램 실행 결과 알려주기
 if len(not_found_files) == 0:
-    alert_msg = "모든 상품의 설명지를 찾았습니다!"
+    alert_msg = "모든 상품의 설명지를 찾았습니다!:)"
 else:
-    #csv파일로 저장
-    converted_codes_df = pd.DataFrame(list(not_found_files.items()), columns=['상품코드', '상품명'])
-    converted_codes_df.to_csv(f"{result_folder}\\{now}_not_found_files.csv", index=False, encoding='utf-8-sig')
-    alert_msg=f"{len(not_found_files)}개의 설명지를 찾지 못했습니다"
-    
-pyautogui.alert(text=alert_msg+" result폴더를 확인해주세요", title='실행 결과!', button='네!')
-os.startfile(result_folder)
-
-#pyinstaller --onefile print_out_product_instruction.py
+    alert_msg=f"{len(not_found_files)}개의 설명지를 찾지 못했습니다:(\nnot_found_files을 확인해주세요"
+pyautogui.alert(text=alert_msg, title='실행 결과!', button='OK')
