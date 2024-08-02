@@ -93,20 +93,20 @@ try:
     app = xw.App(visible=True, add_book=False)
     workbook = app.books.open(order_list_path)
     
-    # personal.xlsb 파일 열기(매크로가 저장된 파일)
-    # 아마 여기는 각 컴퓨터에 맞춰서 별도로 지정해야할듯? ->초기설정으로 넣기
-    personal_wb = app.books.open(r'C:\Users\User\AppData\Roaming\Microsoft\Excel\XLSTART\PERSONAL.XLSB')
+    #매크로가 저장된 엑셀 파일 불러옴.
+    #.bas 파일로 저장된 VBA 코드를 실행하려면 Excel의 VBA 프로젝트에 임포트해야함. 
+    macro_wb = app.books.open(r'setting\macro.XLSB')
     
     # 주문리스트 파일을 활성화(매크로가 적용될 파일이므로)
     workbook.activate()
     
     # 매크로 실행 (personal_wb에서 호출)
-    macro = personal_wb.macro('전채널주문리스트') 
+    macro = macro_wb.macro('전채널주문리스트') 
     macro()
     
     # 어차피 프린트만 하고 지우니까 저장안함. csv는 표시형식같은건 저장안되니까 닫으면 안됨..
-    # personal.xlsb 파일 닫기
-    personal_wb.close()
+    # 매크로 파일 닫기
+    macro_wb.close()
     
     print(f"매크로가 성공적으로 실행되었습니다.")
     
